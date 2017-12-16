@@ -31,20 +31,66 @@ namespace CyLR
                 yield return  proc.StandardOutput.ReadLine();
             };
         }
+        private static void GetAllFiles(string path, IList<string> files)
+        {
+            try
+            {
+                Directory.GetFiles(@path).ToList()
+                    .ForEach(@f => files.Add(@f));
+
+                Directory.GetDirectories(@path).ToList()
+                    .ForEach(@f => GetAllFiles(@f, files));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                //Console.WriteLine(ex);
+            }
+        }
         public static List<string> GetPaths(Arguments arguments, List<string> additionalPaths)
         {
-            var defaultPaths = new List<string>
+            var defaultPaths = new List<string> { };
+            tempPaths = new List<string>
             {
-                        @"%SYSTEMROOT%\System32\drivers\etc\hosts",
-                        @"%SYSTEMROOT%\SchedLgU.Txt",
-                        @"%PROGRAMDATA%\Microsoft\Windows\Start Menu\Programs\Startup",
-                        @"%SYSTEMROOT%\System32\config",
-                        @"%SYSTEMROOT%\System32\winevt\logs",
-                        @"%SYSTEMROOT%\Prefetch",
-                        @"%SYSTEMROOT%\Tasks",
-                        @"%SYSTEMROOT%\System32\LogFiles\W3SVC1",
-                        @"%SystemDrive%\$MFT"
+                        //@"%SYSTEMROOT%\System32\drivers\etc\hosts",
+                        @"%SYSTEMROOT%\SchedLgU.Txt"
+                        //@"%PROGRAMDATA%\Microsoft\Windows\Start Menu\Programs\Startup",
+                        //@"%SYSTEMROOT%\System32\config",
+                        //@"%SYSTEMROOT%\System32\winevt\logs",
+                        //@"%SYSTEMROOT%\Prefetch",
+                        //@"%SYSTEMROOT%\Tasks",
+                        //@"%SYSTEMROOT%\System32\LogFiles\W3SVC1",
+                        //@"%SystemDrive%\$MFT"
             };
+            // Collect file listing
+            AllFiles = new List<string> { };
+            //AllFiles.AddRange(RunCommand("dir", "/s /b /o:gn %SYSTEMROOT%"));
+            GetAllFiles("C:\\", AllFiles);
+            Console.WriteLine(AllFiles);
+            // Find all *.plist files
+            tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains(".plist"))));
+            // Find all .bash_history files
+            tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains(".bash_history"))));
+            // Find all .sh_history files
+            tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains(".sh_history"))));
+            // Find all Ntuser.dat files
+            tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("ntuser.dat"))));
+            // Find Chrome Preference files
+            tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Chrome\\User Data\\Default\\Default\\History"))));
+            tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Chrome\\User Data\\Default\\Default\\Cookies"))));
+            tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Chrome\\User Data\\Default\\Default\\Bookmarks"))));
+            tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Chrome\\User Data\\Default\\Default\\Extensions"))));
+            tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Chrome\\User Data\\Default\\Default\\Last"))));
+            tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Chrome\\User Data\\Default\\Default\\Shortcuts"))));
+            tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Chrome\\User Data\\Default\\Default\\Top"))));
+            tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Chrome\\User Data\\Default\\Default\\Visited"))));
+            
+            // Find FireFox Preference Files
+            tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("places.sqlite"))));
+            tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("downloads.sqlite"))));
+
+            // Fix any spaces to work with MacOS naming conventions
+            defaultPaths = tempPaths.ConvertAll(stringToCheck => stringToCheck.Replace(" ", " "));
+
             defaultPaths = defaultPaths.Select(Environment.ExpandEnvironmentVariables).ToList();
 
             if (Platform.IsUnixLike())
@@ -73,7 +119,7 @@ namespace CyLR
                 AllFiles.AddRange(RunCommand("/usr/bin/find", "/ -print"));
 
                 // Find all *.plist files
-                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("*.plist"))));
+                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains(".plist"))));
                 // Find all .bash_history files
                 tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains(".bash_history"))));
                 // Find all .sh_history files
