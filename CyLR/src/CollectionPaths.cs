@@ -50,17 +50,19 @@ namespace CyLR
             }
             else // Windows Collection
             {
+                string rootpath = @Environment.ExpandEnvironmentVariables("%SYSTEMROOT%").Substring(0, 3);
                 // System Files
-                allcollect.Add(@"%SYSTEMROOT%\System32\drivers\etc\hosts");
-                allcollect.Add(@"%SYSTEMROOT%\SchedLgU.Txt");
-                allcollect.Add(@"%PROGRAMDATA%\Microsoft\Windows\Start Menu\Programs\Startup");
-                allcollect.Add(@"%SYSTEMROOT%\System32\config");
-                allcollect.Add(@"%SYSTEMROOT%\System32\winevt\logs");
-                allcollect.Add(@"%SYSTEMROOT%\Prefetch");
-                allcollect.Add(@"%SYSTEMROOT%\Tasks");
-                allcollect.Add(@"%SYSTEMROOT%\System32\LogFiles\W3SVC1");
-                allcollect.Add(@"%SystemDrive%\$MFT");
+                allcollect.Add(@"\System32\drivers\etc\hosts");
+                allcollect.Add(@"\SchedLgU.Txt");
+                allcollect.Add(@"\Microsoft\Windows\Start Menu\Programs\Startup");
+                allcollect.Add(@"\System32\config");
+                allcollect.Add(@"\System32\winevt\logs");
+                allcollect.Add(@"\Prefetch");
+                allcollect.Add(@"\Tasks");
+                allcollect.Add(@"\System32\LogFiles\W3SVC1");
+                allcollect.Add(@"\$MFT");
                 allcollect.Add(@"ntuser.dat");
+                allcollect.Add(@"NTUSER.DAT");
                 // Chrome Browser
                 allcollect.Add(@"Chrome\User Data\Default\Default\History");
                 allcollect.Add(@"Chrome\User Data\Default\Default\Cookies");
@@ -77,19 +79,24 @@ namespace CyLR
 
         private static IEnumerable<string> GetAllFiles(string @path)
         {
-            Console.WriteLine(@path);
-            var allFiles = Directory.GetFiles(@path);
+            IEnumerable<string> allFiles = Enumerable.Empty<string>();
+            try
+            {
+                allFiles = Directory.GetFiles(@path);
+            }
+            catch (Exception exception)
+            {
+                yield break;
+            }
+            
             foreach (var @file in allFiles)
             {
-                Console.WriteLine("Loop 1");
                 if (IsWantedFile(@file)) { yield return @file; }
             }
             var allDirectories = Directory.GetDirectories(@path);
-            foreach (var @directory in allDirectories)
-            {
-                Console.WriteLine("Loop 2");
-                yield return GetAllFiles(directory);
-            }
+
+            foreach (var file in Directory.GetDirectories(@path).SelectMany(GetAllFiles))
+                yield return file;
         }
 
         private static IEnumerable<string> RunCommand(string OSCommand, string CommandArgs)
@@ -118,12 +125,6 @@ namespace CyLR
             string rootpath = @Environment.ExpandEnvironmentVariables("%SYSTEMROOT%").Substring(0, 3);
             if (Platform.IsUnixLike()) {rootpath = @"/";}
 
-            Console.WriteLine(rootpath);
-            defaultPaths.AddRange(GetAllFiles(rootpath));
-
-            // Fix any spaces to work with MacOS naming conventions
-            //defaultPaths = tempPaths.ConvertAll(stringToCheck => stringToCheck.Replace(" ", " "));
-
             var paths = new List<string>(additionalPaths);
 
             if (arguments.CollectionFilePath != ".")
@@ -144,11 +145,15 @@ namespace CyLR
             {
                 paths.AddRange(arguments.CollectionFiles);
             }
-
+            else 
+            {
+                defaultPaths.AddRange(GetAllFiles(rootpath));
+            }
             if (paths.Count == 1)
             {
                 if (paths[0] == "")
                 {
+                    defaultPaths.AddRange(GetAllFiles(rootpath));
                     return defaultPaths;
                 }
             }
