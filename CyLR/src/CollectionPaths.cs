@@ -8,11 +8,7 @@ namespace CyLR
 {
     internal static class CollectionPaths
     {
-        private static List<string> AllFiles;
-        private static List<string> tempPaths;
-
-        
-        private static IEnumerable<string> GetAllFiles(string path)
+        private static bool IsWantedFile(string filepath)
         {
             var allcollect = new List<string>
             {
@@ -20,14 +16,14 @@ namespace CyLR
                 @".plist",
                 // Shell History
                 @".bash_history",
-                // FireFox browser history
                 @".sh_history",
+                // FireFox browser history
                 @"places.sqlite",
+                @"downloads.sqlite"
             };
             if (Platform.IsUnixLike()) // Linux and Mac Collection
             {
                 // System Files
-                allcollect.Add(@"/root/.bash_history");
                 allcollect.Add(@"/var/log");
                 allcollect.Add(@"/private/var/log/");
                 allcollect.Add(@"/.fseventsd");
@@ -76,20 +72,24 @@ namespace CyLR
                 allcollect.Add(@"Chrome\User Data\Default\Default\Visited");
             }
 
+            return allcollect.Any(filepath.Contains);
+        }
+
+        private static IEnumerable<string> GetAllFiles(string @path)
+        {
+            Console.WriteLine(@path);
             var allFiles = Directory.GetFiles(@path);
-            foreach (var file in allFiles)
+            foreach (var @file in allFiles)
             {
-                yield return file;
+                Console.WriteLine("Loop 1");
+                if (IsWantedFile(@file)) { yield return @file; }
             }
-
-            foreach (var filepath in allFiles)
+            var allDirectories = Directory.GetDirectories(@path);
+            foreach (var @directory in allDirectories)
             {
-                if (allcollect.Any(filepath.Contains))
-                {
-                    yield return filepath;
-                }
+                Console.WriteLine("Loop 2");
+                yield return GetAllFiles(directory);
             }
-
         }
 
         private static IEnumerable<string> RunCommand(string OSCommand, string CommandArgs)
@@ -115,22 +115,15 @@ namespace CyLR
         public static List<string> GetPaths(Arguments arguments, List<string> additionalPaths)
         {
             var defaultPaths = new List<string> { };
+            string rootpath = @Environment.ExpandEnvironmentVariables("%SYSTEMROOT%").Substring(0, 3);
+            if (Platform.IsUnixLike()) {rootpath = @"/";}
 
-            foreach (var file in Directory.GetDirectories(path).SelectMany(GetAllFiles))
-                yield return file;
-            if (Platform.IsUnixLike())
-            {
-                defaultPaths = GetAllFiles(@"/");
-            }
-            else
-            {
-                defaultPaths = GetAllFiles(@"%SYSTEMROOT%");
-            }    
+            Console.WriteLine(rootpath);
+            defaultPaths.AddRange(GetAllFiles(rootpath));
 
+            // Fix any spaces to work with MacOS naming conventions
+            //defaultPaths = tempPaths.ConvertAll(stringToCheck => stringToCheck.Replace(" ", " "));
 
-                // Fix any spaces to work with MacOS naming conventions
-            defaultPaths = tempPaths.ConvertAll(stringToCheck => stringToCheck.Replace(" ", " "));
-            }
             var paths = new List<string>(additionalPaths);
 
             if (arguments.CollectionFilePath != ".")
