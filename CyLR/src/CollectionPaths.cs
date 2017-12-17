@@ -11,6 +11,87 @@ namespace CyLR
         private static List<string> AllFiles;
         private static List<string> tempPaths;
 
+        
+        private static IEnumerable<string> GetAllFiles(string path)
+        {
+            var allcollect = new List<string>
+            {
+                // Plist Files (including Opera / Safari browser history)
+                @".plist",
+                // Shell History
+                @".bash_history",
+                // FireFox browser history
+                @".sh_history",
+                @"places.sqlite",
+            };
+            if (Platform.IsUnixLike()) // Linux and Mac Collection
+            {
+                // System Files
+                allcollect.Add(@"/root/.bash_history");
+                allcollect.Add(@"/var/log");
+                allcollect.Add(@"/private/var/log/");
+                allcollect.Add(@"/.fseventsd");
+                allcollect.Add(@"/etc/hosts.allow");
+                allcollect.Add(@"/etc/hosts.deny");
+                allcollect.Add(@"/etc/hosts");
+                allcollect.Add(@"/System/Library/StartupItems");
+                allcollect.Add(@"/System/Library/LaunchAgents");
+                allcollect.Add(@"/System/Library/LaunchDaemons");
+                allcollect.Add(@"/Library/LaunchAgents");
+                allcollect.Add(@"/Library/LaunchDaemons");
+                allcollect.Add(@"/Library/StartupItems");
+                allcollect.Add(@"/etc/passwd");
+                allcollect.Add(@"/etc/group");
+                // Chrome Browser
+                allcollect.Add(@"Support/Google/Chrome/Default/History");
+                allcollect.Add(@"Support/Google/Chrome/Default/Cookies");
+                allcollect.Add(@"Support/Google/Chrome/Default/Bookmarks");
+                allcollect.Add(@"Support/Google/Chrome/Default/Extensions");
+                allcollect.Add(@"Support/Google/Chrome/Default/Last");
+                allcollect.Add(@"Support/Google/Chrome/Default/Shortcuts");
+                allcollect.Add(@"Support/Google/Chrome/Default/Top");
+                allcollect.Add(@"Support/Google/Chrome/Default/Visited");
+            }
+            else // Windows Collection
+            {
+                // System Files
+                allcollect.Add(@"%SYSTEMROOT%\System32\drivers\etc\hosts");
+                allcollect.Add(@"%SYSTEMROOT%\SchedLgU.Txt");
+                allcollect.Add(@"%PROGRAMDATA%\Microsoft\Windows\Start Menu\Programs\Startup");
+                allcollect.Add(@"%SYSTEMROOT%\System32\config");
+                allcollect.Add(@"%SYSTEMROOT%\System32\winevt\logs");
+                allcollect.Add(@"%SYSTEMROOT%\Prefetch");
+                allcollect.Add(@"%SYSTEMROOT%\Tasks");
+                allcollect.Add(@"%SYSTEMROOT%\System32\LogFiles\W3SVC1");
+                allcollect.Add(@"%SystemDrive%\$MFT");
+                allcollect.Add(@"ntuser.dat");
+                // Chrome Browser
+                allcollect.Add(@"Chrome\User Data\Default\Default\History");
+                allcollect.Add(@"Chrome\User Data\Default\Default\Cookies");
+                allcollect.Add(@"Chrome\User Data\Default\Default\Bookmarks");
+                allcollect.Add(@"Chrome\User Data\Default\Default\Extensions");
+                allcollect.Add(@"Chrome\User Data\Default\Default\Last");
+                allcollect.Add(@"Chrome\User Data\Default\Default\Shortcuts");
+                allcollect.Add(@"Chrome\User Data\Default\Default\Top");
+                allcollect.Add(@"Chrome\User Data\Default\Default\Visited");
+            }
+
+            var allFiles = Directory.GetFiles(@path);
+            foreach (var file in allFiles)
+            {
+                yield return file;
+            }
+
+            foreach (var filepath in allFiles)
+            {
+                if (allcollect.Any(filepath.Contains))
+                {
+                    yield return filepath;
+                }
+            }
+
+        }
+
         private static IEnumerable<string> RunCommand(string OSCommand, string CommandArgs)
         {
             var newPaths = new List<string> { };
@@ -31,115 +112,24 @@ namespace CyLR
                 yield return  proc.StandardOutput.ReadLine();
             };
         }
-        private static void GetAllFiles(string path, IList<string> files)
-        {
-            try
-            {
-                Directory.GetFiles(@path).ToList()
-                    .ForEach(@f => files.Add(@f));
-
-                Directory.GetDirectories(@path).ToList()
-                    .ForEach(@f => GetAllFiles(@f, files));
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                //Console.WriteLine(ex);
-            }
-        }
         public static List<string> GetPaths(Arguments arguments, List<string> additionalPaths)
         {
             var defaultPaths = new List<string> { };
-            tempPaths = new List<string>
-            {
-                        //@"%SYSTEMROOT%\System32\drivers\etc\hosts",
-                        @"%SYSTEMROOT%\SchedLgU.Txt"
-                        //@"%PROGRAMDATA%\Microsoft\Windows\Start Menu\Programs\Startup",
-                        //@"%SYSTEMROOT%\System32\config",
-                        //@"%SYSTEMROOT%\System32\winevt\logs",
-                        //@"%SYSTEMROOT%\Prefetch",
-                        //@"%SYSTEMROOT%\Tasks",
-                        //@"%SYSTEMROOT%\System32\LogFiles\W3SVC1",
-                        //@"%SystemDrive%\$MFT"
-            };
-            // Collect file listing
-            AllFiles = new List<string> { };
-            //AllFiles.AddRange(RunCommand("dir", "/s /b /o:gn %SYSTEMROOT%"));
-            GetAllFiles("C:\\", AllFiles);
-            Console.WriteLine(AllFiles);
-            // Find all *.plist files
-            tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains(".plist"))));
-            // Find all .bash_history files
-            tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains(".bash_history"))));
-            // Find all .sh_history files
-            tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains(".sh_history"))));
-            // Find all Ntuser.dat files
-            tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("ntuser.dat"))));
-            // Find Chrome Preference files
-            tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Chrome\\User Data\\Default\\Default\\History"))));
-            tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Chrome\\User Data\\Default\\Default\\Cookies"))));
-            tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Chrome\\User Data\\Default\\Default\\Bookmarks"))));
-            tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Chrome\\User Data\\Default\\Default\\Extensions"))));
-            tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Chrome\\User Data\\Default\\Default\\Last"))));
-            tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Chrome\\User Data\\Default\\Default\\Shortcuts"))));
-            tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Chrome\\User Data\\Default\\Default\\Top"))));
-            tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Chrome\\User Data\\Default\\Default\\Visited"))));
-            
-            // Find FireFox Preference Files
-            tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("places.sqlite"))));
-            tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("downloads.sqlite"))));
 
-            // Fix any spaces to work with MacOS naming conventions
-            defaultPaths = tempPaths.ConvertAll(stringToCheck => stringToCheck.Replace(" ", " "));
-
-            defaultPaths = defaultPaths.Select(Environment.ExpandEnvironmentVariables).ToList();
-
+            foreach (var file in Directory.GetDirectories(path).SelectMany(GetAllFiles))
+                yield return file;
             if (Platform.IsUnixLike())
             {
-                defaultPaths = new List<string> { };
-                tempPaths = new List<string>
-                {
-                    "/root/.bash_history",
-                    "/var/log",
-                    "/private/var/log/",
-                    "/.fseventsd",
-                    "/etc/hosts.allow",
-                    "/etc/hosts.deny",
-                    "/etc/hosts",
-                    "/System/Library/StartupItems",
-                    "/System/Library/LaunchAgents",
-                    "/System/Library/LaunchDaemons",
-                    "/Library/LaunchAgents",
-                    "/Library/LaunchDaemons",
-                    "/Library/StartupItems",
-                    "/etc/passwd",
-                    "/etc/group"
-                };
-                // Collect file listing
-                AllFiles = new List<string> { };
-                AllFiles.AddRange(RunCommand("/usr/bin/find", "/ -print"));
+                defaultPaths = GetAllFiles(@"/");
+            }
+            else
+            {
+                defaultPaths = GetAllFiles(@"%SYSTEMROOT%");
+            }    
 
-                // Find all *.plist files
-                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains(".plist"))));
-                // Find all .bash_history files
-                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains(".bash_history"))));
-                // Find all .sh_history files
-                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains(".sh_history"))));
-                // Find Chrome Preference files
-                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Support/Google/Chrome/Default/History"))));
-                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Support/Google/Chrome/Default/Cookies"))));
-                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Support/Google/Chrome/Default/Bookmarks"))));
-                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Support/Google/Chrome/Default/Extensions"))));
-                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Support/Google/Chrome/Default/Last"))));
-                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Support/Google/Chrome/Default/Shortcuts"))));
-                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Support/Google/Chrome/Default/Top"))));
-                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("Support/Google/Chrome/Default/Visited"))));
-
-                // Find FireFox Preference Files
-                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("places.sqlite"))));
-                tempPaths.AddRange(AllFiles.Where((stringToCheck => stringToCheck.Contains("downloads.sqlite"))));
 
                 // Fix any spaces to work with MacOS naming conventions
-                defaultPaths = tempPaths.ConvertAll(stringToCheck => stringToCheck.Replace(" ", " "));
+            defaultPaths = tempPaths.ConvertAll(stringToCheck => stringToCheck.Replace(" ", " "));
             }
             var paths = new List<string>(additionalPaths);
 
