@@ -62,6 +62,8 @@ namespace CyLR
                 }
             }
 
+            var stopwatch = new Stopwatch();
+            stopwatch.Start();
 
             List<string> paths;
             try
@@ -75,8 +77,7 @@ namespace CyLR
             }
 
 
-            var stopwatch = new Stopwatch();
-            stopwatch.Start();
+
 
             try
             {

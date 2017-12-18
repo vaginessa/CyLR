@@ -84,19 +84,31 @@ namespace CyLR
             {
                 allFiles = Directory.GetFiles(@path);
             }
-            catch (Exception exception)
+            catch (UnauthorizedAccessException)
             {
-                yield break;
+                Console.WriteLine("Failed to read files in '{0}' due to insufficient privilages.", path);
+                allFiles = Enumerable.Empty<string>();
             }
-            
+
             foreach (var @file in allFiles)
             {
                 if (IsWantedFile(@file)) { yield return @file; }
             }
-            var allDirectories = Directory.GetDirectories(@path);
+
+            IEnumerable<string> allDirectories = Enumerable.Empty<string>();
+            try
+            {
+                allDirectories = Directory.GetDirectories(@path);
+            }
+            catch (UnauthorizedAccessException)
+            {
+                Console.WriteLine("Failed to read files in '{0}' due to insufficient privilages.", path);
+                allDirectories = Enumerable.Empty<string>();
+            }
 
             foreach (var file in Directory.GetDirectories(@path).SelectMany(GetAllFiles))
                 yield return file;
+
         }
 
         private static IEnumerable<string> RunCommand(string OSCommand, string CommandArgs)
