@@ -86,7 +86,7 @@ namespace CyLR
             }
             catch (UnauthorizedAccessException)
             {
-                Console.WriteLine("Failed to read files in '{0}' due to insufficient privilages.", path);
+                //Console.WriteLine("1: Failed to read files in '{0}' due to insufficient privilages.", path);
                 allFiles = Enumerable.Empty<string>();
             }
 
@@ -102,13 +102,14 @@ namespace CyLR
             }
             catch (UnauthorizedAccessException)
             {
-                Console.WriteLine("Failed to read files in '{0}' due to insufficient privilages.", path);
+                //Console.WriteLine("2: Failed to read files in '{0}' due to insufficient privilages.", path);
                 allDirectories = Enumerable.Empty<string>();
             }
 
-            foreach (var file in Directory.GetDirectories(@path).SelectMany(GetAllFiles))
-                yield return file;
-
+            foreach (var @file in allDirectories.SelectMany(GetAllFiles))
+            {
+                yield return @file;
+            }
         }
 
         private static IEnumerable<string> RunCommand(string OSCommand, string CommandArgs)
@@ -159,13 +160,13 @@ namespace CyLR
             }
             else 
             {
-                defaultPaths.AddRange(GetAllFiles(rootpath));
+                defaultPaths.AddRange(GetAllFiles(@rootpath));
             }
             if (paths.Count == 1)
             {
                 if (paths[0] == "")
                 {
-                    defaultPaths.AddRange(GetAllFiles(rootpath));
+                    defaultPaths.AddRange(GetAllFiles(@rootpath));
                     return defaultPaths;
                 }
             }
