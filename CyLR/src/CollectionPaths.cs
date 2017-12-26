@@ -38,6 +38,7 @@ namespace CyLR
                 allcollect.Add(@"/Library/StartupItems");
                 allcollect.Add(@"/etc/passwd");
                 allcollect.Add(@"/etc/group");
+                allcollect.Add(@"/etc/rc.d");
                 // Chrome Browser
                 allcollect.Add(@"Support/Google/Chrome/Default/History");
                 allcollect.Add(@"Support/Google/Chrome/Default/Cookies");
