@@ -134,7 +134,7 @@ namespace CyLR
                 yield return  proc.StandardOutput.ReadLine();
             };
         }
-        public static List<string> GetPaths(IFileSystem fileSystem, Arguments arguments, List<string> additionalPaths)
+        public static IEnumerable<string> GetPaths(IFileSystem fileSystem, Arguments arguments, IEnumerable<string> additionalPaths)
         {
             var defaultPaths = new List<string> { };
             string rootpath = @Environment.ExpandEnvironmentVariables("%SYSTEMROOT%").Substring(0, 3);
@@ -150,9 +150,7 @@ namespace CyLR
                 }
                 else
                 {
-                    Console.WriteLine("Error: Could not find file: {0}", arguments.CollectionFilePath);
-                    Console.WriteLine("Exiting");
-                    throw new ArgumentException();
+                    throw new ArgumentException($"Error: Could not find file: {arguments.CollectionFilePath}");
                 }
             }
 

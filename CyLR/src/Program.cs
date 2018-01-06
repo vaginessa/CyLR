@@ -67,7 +67,7 @@ namespace CyLR
             var stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            List<string> paths;
+            IEnumerable<string> paths;
             try
             {
                 paths = CollectionPaths.GetPaths(fileSystem, arguments, additionalPaths);
