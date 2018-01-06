@@ -50,6 +50,8 @@ namespace CyLR
                     return 1;
                 }
             }
+            var fileSystem = arguments.ForceNative ? (IFileSystem)new NativeFileSystem() : new RawFileSystem();
+
 
             var additionalPaths = new List<string>();
             if (Platform.IsInputRedirected)
@@ -68,7 +70,7 @@ namespace CyLR
             List<string> paths;
             try
             {
-                paths = CollectionPaths.GetPaths(arguments, additionalPaths);
+                paths = CollectionPaths.GetPaths(fileSystem, arguments, additionalPaths);
             }
             catch (Exception e)
             {
@@ -97,7 +99,7 @@ namespace CyLR
                 }
                 using (archiveStream)
                 {
-                    CreateArchive(arguments, archiveStream, paths);
+                    CreateArchive(fileSystem, arguments, archiveStream, paths);
                 }
 
                 stopwatch.Stop();
@@ -117,18 +119,16 @@ namespace CyLR
         /// <param name="arguments">Program arguments.</param>
         /// <param name="archiveStream">The Stream the archive will be written to.</param>
         /// <param name="paths">Map of driveLetter->path for all files to collect.</param>
-        private static void CreateArchive(Arguments arguments, Stream archiveStream, IEnumerable<string> paths)
+        private static void CreateArchive(IFileSystem fileSystem, Arguments arguments, Stream archiveStream, IEnumerable<string> paths)
         {
             using (var archive = new SharpZipArchive(archiveStream, arguments.ZipPassword))
             {
-                var system = arguments.ForceNative ? (IFileSystem) new NativeFileSystem() : new RawFileSystem();
-
-                var filePaths = paths.SelectMany(path => system.GetFilesFromPath(path)).ToList();
-                foreach (var filePath in filePaths.Where(path => !system.FileExists(path)))
+                var filePaths = paths.SelectMany(path => fileSystem.GetFilesFromPath(path)).ToList();
+                foreach (var filePath in filePaths.Where(path => !fileSystem.FileExists(path)))
                 {
                     Console.WriteLine($"Warning: file or folder '{filePath}' does not exist.");
                 }
-                var fileHandles = OpenFiles(system, filePaths);
+                var fileHandles = OpenFiles(fileSystem, filePaths);
 
                 archive.CollectFilesToArchive(fileHandles);
             }

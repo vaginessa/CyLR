@@ -3,6 +3,7 @@ using System.IO;
 using System.Collections.Generic;
 using System.Linq;
 using System.Diagnostics;
+using CyLR.read;
 
 namespace CyLR
 {
@@ -78,12 +79,12 @@ namespace CyLR
             return allcollect.Any(filepath.Contains);
         }
 
-        private static IEnumerable<string> GetAllFiles(string @path)
+        private static IEnumerable<string> GetAllFiles(IFileSystem fileSystem, string @path)
         {
             IEnumerable<string> allFiles = Enumerable.Empty<string>();
             try
             {
-                allFiles = Directory.GetFiles(@path);
+                allFiles = fileSystem.GetFilesFromPath(@path);
             }
             catch (UnauthorizedAccessException)
             {
@@ -107,7 +108,7 @@ namespace CyLR
                 allDirectories = Enumerable.Empty<string>();
             }
 
-            foreach (var @file in allDirectories.SelectMany(GetAllFiles))
+            foreach (var @file in allDirectories.SelectMany((dir)=>GetAllFiles(fileSystem, dir)))
             {
                 yield return @file;
             }
@@ -133,7 +134,7 @@ namespace CyLR
                 yield return  proc.StandardOutput.ReadLine();
             };
         }
-        public static List<string> GetPaths(Arguments arguments, List<string> additionalPaths)
+        public static List<string> GetPaths(IFileSystem fileSystem, Arguments arguments, List<string> additionalPaths)
         {
             var defaultPaths = new List<string> { };
             string rootpath = @Environment.ExpandEnvironmentVariables("%SYSTEMROOT%").Substring(0, 3);
@@ -161,13 +162,13 @@ namespace CyLR
             }
             else 
             {
-                defaultPaths.AddRange(GetAllFiles(@rootpath));
+                defaultPaths.AddRange(GetAllFiles(fileSystem, @rootpath));
             }
             if (paths.Count == 1)
             {
                 if (paths[0] == "")
                 {
-                    defaultPaths.AddRange(GetAllFiles(@rootpath));
+                    defaultPaths.AddRange(GetAllFiles(fileSystem, @rootpath));
                     return defaultPaths;
                 }
             }
